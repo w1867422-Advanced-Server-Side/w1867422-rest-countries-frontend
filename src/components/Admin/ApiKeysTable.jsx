@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
     Table, TableHead, TableBody, TableRow, TableCell,
-    TableContainer, Paper, Switch, IconButton
+    TableContainer, Paper, Switch, IconButton, Typography
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../api/axiosInstance';
 
-export default function ApiKeysTable({ adminView = false }) {
+export default function ApiKeysTable({ adminView = true }) {
     const [keys, setKeys] = useState([]);
 
+    // fetch all keys (adminView=true hits /admin/apiKeys)
     async function fetchKeys() {
         try {
             const url = adminView ? '/admin/apiKeys' : '/apiKey';
@@ -20,20 +21,7 @@ export default function ApiKeysTable({ adminView = false }) {
     }
 
     useEffect(() => {
-        let mounted = true;
-
-        async function load() {
-            try {
-                const url = adminView ? '/admin/apiKeys' : '/apiKey';
-                const { data } = await api.get(url);
-                if (mounted) setKeys(data);
-            } catch (err) {
-                console.error('Failed to load API keys', err);
-            }
-        }
-
-        load();
-        return () => { mounted = false; };
+        fetchKeys();
     }, [adminView]);
 
     const toggleActive = async (id, active) => {
@@ -50,12 +38,16 @@ export default function ApiKeysTable({ adminView = false }) {
 
     return (
         <TableContainer component={Paper} sx={{ mt: 2 }}>
+            <Typography variant="h6" sx={{ p: 2 }}>
+                {adminView ? 'All API Keys' : 'My API Keys'}
+            </Typography>
             <Table>
                 <TableHead>
                     <TableRow>
                         {adminView && <TableCell>User Email</TableCell>}
-                        <TableCell>Key</TableCell>
+                        <TableCell>API Key</TableCell>
                         <TableCell>Active</TableCell>
+                        <TableCell>Usage Count</TableCell>         {/* New column */}
                         <TableCell>Created At</TableCell>
                         <TableCell>Actions</TableCell>
                     </TableRow>
@@ -64,10 +56,16 @@ export default function ApiKeysTable({ adminView = false }) {
                     {keys.map(k => (
                         <TableRow key={k.id}>
                             {adminView && <TableCell>{k.user_email}</TableCell>}
-                            <TableCell code>{k.api_key}</TableCell>
                             <TableCell>
-                                <Switch checked={!!k.active} onChange={() => toggleActive(k.id, k.active)} />
+                                <Typography component="code">{k.api_key}</Typography>
                             </TableCell>
+                            <TableCell>
+                                <Switch
+                                    checked={!!k.active}
+                                    onChange={() => toggleActive(k.id, k.active)}
+                                />
+                            </TableCell>
+                            <TableCell>{k.usage_count}</TableCell>  {/* Display usage_count */}
                             <TableCell>{new Date(k.created_at).toLocaleString()}</TableCell>
                             <TableCell>
                                 <IconButton onClick={() => deleteKey(k.id)}>
