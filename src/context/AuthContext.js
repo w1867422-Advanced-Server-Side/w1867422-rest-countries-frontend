@@ -6,25 +6,54 @@ import { useNavigate } from 'react-router-dom';
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-    const [user, setUser]   = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
     const navigate = useNavigate();
+    const [token, setToken]     = useState(localStorage.getItem('token'));
+    const [user, setUser]       = useState(null);
+    const [loading, setLoading] = useState(!!token);
 
     useEffect(() => {
-        if (token) {
-            const { exp, role } = jwtDecode(token);
-            if (Date.now() >= exp * 1000) return logout();
-            api.get('/auth/profile').then(r => setUser(r.data)).catch(logout);
+        if (!token) {
+            setLoading(false);
+            return;
         }
+
+        let mounted = true;
+        async function loadProfile() {
+            try {
+                // pre‑check expiry
+                const { exp } = jwtDecode(token);
+                if (Date.now() >= exp * 1000) {
+                    logout();
+                    return;
+                }
+
+                const res = await api.get('/auth/profile');
+                if (mounted) setUser(res.data);
+            } catch {
+                // invalid token or network error
+                logout();
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        }
+
+        loadProfile();
+        return () => {
+            mounted = false;
+        };
     }, [token]);
 
-    function login(tok, userData) {
-        localStorage.setItem('token', tok);
-        setToken(tok);
+    function login(newToken, userData) {
+        localStorage.setItem('token', newToken);
+        setToken(newToken);
         setUser(userData);
         navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
     }
-    function register(tok, userData) { login(tok, userData); }
+
+    function register(newToken, userData) {
+        login(newToken, userData);
+    }
+
     function logout() {
         localStorage.removeItem('token');
         setToken(null);
@@ -33,7 +62,7 @@ export function AuthProvider({ children }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, token, login, register, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );
