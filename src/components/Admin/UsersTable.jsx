@@ -1,0 +1,79 @@
+import React, { useEffect, useState } from 'react';
+import {
+    Table, TableHead, TableBody, TableRow, TableCell,
+    TableContainer, Paper, IconButton, Select, MenuItem,
+    Dialog, DialogTitle, DialogActions, Button
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import api from '../../api/axiosInstance';
+
+export default function UsersTable() {
+    const [users, setUsers] = useState([]);
+    const [dialog, setDialog] = useState({ open:false, id:null });
+
+    const fetchUsers = async () => {
+        const { data } = await api.get('/admin/users');
+        setUsers(data);
+    };
+    useEffect(fetchUsers, []);
+
+    const changeRole = async (id, role) => {
+        await api.put(`/admin/users/${id}`, { role });
+        fetchUsers();
+    };
+
+    const deleteUser = async () => {
+        await api.delete(`/admin/users/${dialog.id}`);
+        setDialog({ open:false });
+        fetchUsers();
+    };
+
+    return (
+        <>
+            <TableContainer component={Paper} sx={{ mt:2 }}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Username</TableCell>
+                            <TableCell>Email</TableCell>
+                            <TableCell>Role</TableCell>
+                            <TableCell>Joined</TableCell>
+                            <TableCell>Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {users.map(u => (
+                            <TableRow key={u.id}>
+                                <TableCell>{u.username}</TableCell>
+                                <TableCell>{u.email}</TableCell>
+                                <TableCell>
+                                    <Select
+                                        value={u.role}
+                                        onChange={e => changeRole(u.id, e.target.value)}
+                                    >
+                                        <MenuItem value="user">User</MenuItem>
+                                        <MenuItem value="admin">Admin</MenuItem>
+                                    </Select>
+                                </TableCell>
+                                <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                    <IconButton onClick={() => setDialog({ open:true, id:u.id })}>
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            <Dialog open={dialog.open} onClose={() => setDialog({ open:false })}>
+                <DialogTitle>Confirm Delete User?</DialogTitle>
+                <DialogActions>
+                    <Button onClick={() => setDialog({ open:false })}>Cancel</Button>
+                    <Button color="error" onClick={deleteUser}>Delete</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
