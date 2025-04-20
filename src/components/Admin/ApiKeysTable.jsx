@@ -6,16 +6,35 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../api/axiosInstance';
 
-export default function ApiKeysTable({ adminView=false }) {
+export default function ApiKeysTable({ adminView = false }) {
     const [keys, setKeys] = useState([]);
 
-    const fetchKeys = async () => {
-        const url = adminView ? '/admin/apiKeys' : '/apiKey';
-        const { data } = await api.get(url);
-        setKeys(data);
-    };
+    async function fetchKeys() {
+        try {
+            const url = adminView ? '/admin/apiKeys' : '/apiKey';
+            const { data } = await api.get(url);
+            setKeys(data);
+        } catch (err) {
+            console.error('Failed to load API keys', err);
+        }
+    }
 
-    useEffect(fetchKeys, []);
+    useEffect(() => {
+        let mounted = true;
+
+        async function load() {
+            try {
+                const url = adminView ? '/admin/apiKeys' : '/apiKey';
+                const { data } = await api.get(url);
+                if (mounted) setKeys(data);
+            } catch (err) {
+                console.error('Failed to load API keys', err);
+            }
+        }
+
+        load();
+        return () => { mounted = false; };
+    }, [adminView]);
 
     const toggleActive = async (id, active) => {
         const url = adminView ? `/admin/apiKeys/${id}` : `/apiKey/${id}`;
@@ -30,7 +49,7 @@ export default function ApiKeysTable({ adminView=false }) {
     };
 
     return (
-        <TableContainer component={Paper} sx={{ mt:2 }}>
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
             <Table>
                 <TableHead>
                     <TableRow>

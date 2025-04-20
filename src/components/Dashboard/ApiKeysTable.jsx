@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Table, TableHead, TableBody, TableRow, TableCell,
     TableContainer, Paper, Button, Switch, IconButton,
@@ -11,12 +11,30 @@ export default function ApiKeysTable() {
     const [keys, setKeys] = useState([]);
     const [open, setOpen] = useState(false);
 
-    const fetchKeys = async () => {
-        const { data } = await api.get('/apiKey');
-        setKeys(data);
-    };
+    async function fetchKeys() {
+        try {
+            const { data } = await api.get('/apiKey');
+            setKeys(data);
+        } catch (err) {
+            console.error('Failed to load user API keys', err);
+        }
+    }
 
-    useEffect(fetchKeys, []);
+    useEffect(() => {
+        let mounted = true;
+
+        async function load() {
+            try {
+                const { data } = await api.get('/apiKey');
+                if (mounted) setKeys(data);
+            } catch (err) {
+                console.error('Failed to load user API keys', err);
+            }
+        }
+
+        load();
+        return () => { mounted = false; };
+    }, []);
 
     const toggleActive = async (id, active) => {
         await api.put(`/apiKey/${id}`, { active: !active });
@@ -49,7 +67,7 @@ export default function ApiKeysTable() {
                 </DialogActions>
             </Dialog>
 
-            <TableContainer component={Paper} sx={{ mt:2 }}>
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
                 <Table>
                     <TableHead>
                         <TableRow>

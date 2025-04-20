@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api/axiosInstance';
 import {
     Paper, Table, TableHead, TableBody,
@@ -11,15 +11,35 @@ export default function Countries() {
     const [countries, setCountries] = useState([]);
     const [q, setQ] = useState('');
 
-    const fetchAll = async () => {
-        const { data } = await api.get('/countries');
-        setCountries(data);
-    };
+    async function fetchAll() {
+        try {
+            const { data } = await api.get('/countries');
+            setCountries(data);
+        } catch (err) {
+            console.error('Failed to load countries', err);
+        }
+    }
 
-    useEffect(fetchAll, []);
+    useEffect(() => {
+        let mounted = true;
+
+        async function loadAll() {
+            try {
+                const { data } = await api.get('/countries');
+                if (mounted) setCountries(data);
+            } catch (err) {
+                console.error('Failed to load countries', err);
+            }
+        }
+
+        loadAll();
+        return () => { mounted = false; };
+    }, []);
 
     const handleSearch = async () => {
-        if (!q.trim()) return fetchAll();
+        if (!q.trim()) {
+            return fetchAll();
+        }
         try {
             const { data } = await api.get(`/countries/${q}`);
             setCountries(data);
@@ -29,15 +49,15 @@ export default function Countries() {
     };
 
     return (
-        <Paper sx={{ p:2, mt:2 }}>
+        <Paper sx={{ p: 2, mt: 2 }}>
             <TextField
                 label="Search by name"
                 value={q}
                 onChange={e => setQ(e.target.value)}
             />
-            <Button onClick={handleSearch} sx={{ ml:1 }}>Go</Button>
+            <Button onClick={handleSearch} sx={{ ml: 1 }}>Go</Button>
 
-            <TableContainer component={Paper} sx={{ mt:2 }}>
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
                 <Table>
                     <TableHead>
                         <TableRow>

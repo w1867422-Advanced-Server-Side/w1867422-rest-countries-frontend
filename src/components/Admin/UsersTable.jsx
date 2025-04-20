@@ -9,13 +9,32 @@ import api from '../../api/axiosInstance';
 
 export default function UsersTable() {
     const [users, setUsers] = useState([]);
-    const [dialog, setDialog] = useState({ open:false, id:null });
+    const [dialog, setDialog] = useState({ open: false, id: null });
 
-    const fetchUsers = async () => {
-        const { data } = await api.get('/admin/users');
-        setUsers(data);
-    };
-    useEffect(fetchUsers, []);
+    async function fetchUsers() {
+        try {
+            const { data } = await api.get('/admin/users');
+            setUsers(data);
+        } catch (err) {
+            console.error('Failed to load users', err);
+        }
+    }
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function load() {
+            try {
+                const { data } = await api.get('/admin/users');
+                if (mounted) setUsers(data);
+            } catch (err) {
+                console.error('Failed to load users', err);
+            }
+        }
+
+        load();
+        return () => { mounted = false; };
+    }, []);
 
     const changeRole = async (id, role) => {
         await api.put(`/admin/users/${id}`, { role });
@@ -24,13 +43,13 @@ export default function UsersTable() {
 
     const deleteUser = async () => {
         await api.delete(`/admin/users/${dialog.id}`);
-        setDialog({ open:false });
+        setDialog({ open: false, id: null });
         fetchUsers();
     };
 
     return (
         <>
-            <TableContainer component={Paper} sx={{ mt:2 }}>
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -57,7 +76,7 @@ export default function UsersTable() {
                                 </TableCell>
                                 <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
                                 <TableCell>
-                                    <IconButton onClick={() => setDialog({ open:true, id:u.id })}>
+                                    <IconButton onClick={() => setDialog({ open: true, id: u.id })}>
                                         <DeleteIcon />
                                     </IconButton>
                                 </TableCell>
@@ -67,10 +86,10 @@ export default function UsersTable() {
                 </Table>
             </TableContainer>
 
-            <Dialog open={dialog.open} onClose={() => setDialog({ open:false })}>
+            <Dialog open={dialog.open} onClose={() => setDialog({ open: false, id: null })}>
                 <DialogTitle>Confirm Delete User?</DialogTitle>
                 <DialogActions>
-                    <Button onClick={() => setDialog({ open:false })}>Cancel</Button>
+                    <Button onClick={() => setDialog({ open: false, id: null })}>Cancel</Button>
                     <Button color="error" onClick={deleteUser}>Delete</Button>
                 </DialogActions>
             </Dialog>

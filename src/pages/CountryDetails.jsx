@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import {
@@ -10,15 +10,25 @@ export default function CountryDetails() {
     const [c, setC] = useState(null);
 
     useEffect(() => {
-        api.get(`/countries/${name}`)
-            .then(res => setC(res.data[0]))
-            .catch(console.error);
+        let mounted = true;
+
+        async function load() {
+            try {
+                const { data } = await api.get(`/countries/${name}`);
+                if (mounted) setC(data[0]);
+            } catch (err) {
+                console.error('Failed to load country details', err);
+            }
+        }
+
+        load();
+        return () => { mounted = false; };
     }, [name]);
 
     if (!c) return <CircularProgress />;
 
     return (
-        <Paper sx={{ p:2, mt:2 }}>
+        <Paper sx={{ p: 2, mt: 2 }}>
             <Grid container spacing={2}>
                 <Grid item xs={12}>
                     <img src={c.flag} alt={c.name} width={64} />
@@ -32,14 +42,14 @@ export default function CountryDetails() {
                 <Grid item xs={6}>
                     <Typography><strong>Currencies:</strong></Typography>
                     {Object.entries(c.currencies).map(([code, cur]) => (
-                        <Chip key={code} label={`${cur.name} (${cur.symbol})`} sx={{ mr:1, mb:1 }} />
+                        <Chip key={code} label={`${cur.name} (${cur.symbol})`} sx={{ mr: 1, mb: 1 }} />
                     ))}
                 </Grid>
                 <Grid item xs={6}>
                     <Typography><strong>Languages:</strong></Typography>
-                    {Object.values(c.languages).map(l =>
-                        <Chip key={l} label={l} sx={{ mr:1, mb:1 }} />
-                    )}
+                    {Object.values(c.languages).map(l => (
+                        <Chip key={l} label={l} sx={{ mr: 1, mb: 1 }} />
+                    ))}
                 </Grid>
             </Grid>
         </Paper>
