@@ -6,13 +6,13 @@ export default function ProtectedRoute({ children }) {
     const { token, user, loading } = React.useContext(AuthContext);
 
     if (!token && !loading) {
-        return <Navigate to="/login" />;
+        return <Navigate to="/" />;
     }
     if (loading) {
         return null;
     }
     if (!user) {
-        return <Navigate to="/login" />;
+        return <Navigate to="/" />;
     }
     return children;
 }
