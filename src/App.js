@@ -26,9 +26,9 @@ function NavBar() {
     return (
         <AppBar position="static" color="primary">
             <Toolbar>
-                <Button color="inherit" component={Link} to="/">
-                    RestCountries App
-                </Button>
+                {!user && (
+                    <Button component={Link} to="/">RestCountries App</Button>
+                )}
 
                 {user ? (
                     <>

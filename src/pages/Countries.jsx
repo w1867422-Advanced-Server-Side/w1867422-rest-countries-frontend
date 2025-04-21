@@ -13,46 +13,33 @@ export default function Countries() {
     const [error, setError]         = useState('');
     const [loading, setLoading]     = useState(true);
 
-    // Validate API key and then fetch
     useEffect(() => {
         let mounted = true;
-
         async function validateAndLoad() {
             try {
-                // 1) load all your API keys
                 const { data: keys } = await api.get('/apiKey');
-
-                // 2) check localStorage for the selected key
                 const sel = localStorage.getItem('apiKey');
                 if (!sel) {
-                    setError('No API key selected. Please generate or select one in your Dashboard.');
+                    setError('No API key selected. Go to Dashboard.');
                     return;
                 }
-
-                // 3) find it
                 const found = keys.find(k => k.api_key === sel);
                 if (!found) {
-                    setError('Selected API key not found. Please select a valid key in your Dashboard.');
+                    setError('Key not found. Go to Dashboard.');
                     return;
                 }
-
-                // 4) check active
                 if (!found.active) {
-                    setError('Selected API key is not active. Please activate or choose another.');
+                    setError('Key inactive. Please activate or select another.');
                     return;
                 }
 
-                // 5) OK – fetch countries
                 const { data } = await api.get('/countries');
                 if (mounted) {
                     setCountries(data);
                     setError('');
                 }
-            } catch (err) {
-                console.error(err);
-                if (mounted) {
-                    setError('Failed to load data. Please try again.');
-                }
+            } catch {
+                if (mounted) setError('Failed to load countries.');
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -63,57 +50,32 @@ export default function Countries() {
     }, []);
 
     const handleSearch = async () => {
+        setLoading(true);
+        setError('');
         try {
-            // 1) validation up front — no throw
             const sel = localStorage.getItem('apiKey');
             if (!sel) {
                 setError('No API key selected.');
                 setCountries([]);
-                setLoading(false);
                 return;
             }
-
-            // 2) fetch & validate
-            let keys;
-            try {
-                ({ data: keys } = await api.get('/apiKey'));
-            } catch {
-                setError('Could not load your API keys.');
-                setCountries([]);
-                setLoading(false);
-                return;
-            }
-
+            const { data: keys } = await api.get('/apiKey');
             const found = keys.find(k => k.api_key === sel);
-            if (!found) {
-                setError('Selected key not recognized.');
+            if (!found || !found.active) {
+                setError('Key invalid or inactive.');
                 setCountries([]);
-                setLoading(false);
                 return;
             }
-            if (!found.active) {
-                setError('Selected key is inactive.');
-                setCountries([]);
-                setLoading(false);
-                return;
-            }
-
-            // 3) perform the actual search
-            try {
-                const { data } = await api.get(`/countries/${q}`);
-                setCountries(data);
-            } catch {
-                setError('Search request failed.');
-                setCountries([]);
-            } finally {
-                setLoading(false);
-            }
+            const { data } = await api.get(`/countries/${q}`);
+            setCountries(data);
+        } catch {
+            setError('Search failed.');
+            setCountries([]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Show a spinner while loading
     if (loading) {
         return (
             <Paper sx={{ p:4, mt:4, textAlign:'center' }}>
@@ -127,9 +89,7 @@ export default function Countries() {
             {error && (
                 <Alert severity="error" sx={{ mb:2 }}>
                     {error}{' '}
-                    {!localStorage.getItem('apiKey') && (
-                        <Link to="/dashboard">Go to Dashboard</Link>
-                    )}
+                    {!localStorage.getItem('apiKey') && <Link to="/dashboard">Dashboard</Link>}
                 </Alert>
             )}
 
@@ -157,7 +117,7 @@ export default function Countries() {
                                     component={Link}
                                     to={`/countries/${c.name}`}
                                     hover
-                                    sx={{ textDecoration: 'none' }}
+                                    sx={{ textDecoration:'none' }}
                                 >
                                     <TableCell>
                                         <img src={c.flag} alt={c.name} width={32} />
