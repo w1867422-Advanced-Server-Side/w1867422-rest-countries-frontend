@@ -33,6 +33,7 @@ Supports user authentication (JWT), per‑user API key management, admin views, 
 
 1. [Prerequisites](#prerequisites)
 2. [Getting Started](#getting-started)
+3. [Docker](#Docker)
 
 ---
 
@@ -61,3 +62,10 @@ Supports user authentication (JWT), per‑user API key management, admin views, 
 
   Opens at http://localhost:5000.
 
+## Docker
+**A Dockerfile and .dockerignore are included for containerization.**
+
+1. **Build the image**
+
+    ```bash
+   docker build -t restcountries-frontend .
